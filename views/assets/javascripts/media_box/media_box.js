@@ -182,12 +182,14 @@
                 files = [],
                 item;
 
-            if ($items.size()) {
+            if ($items.length) {
                 $items.each(function () {
                     item = $(this).data();
 
                     files.push({
                         ID: item.primaryKey,
+                        Video: item.video,
+                        SelectedType: item.selectedType,
                         Url: item.originalUrl.replace(/.original.(\w+)$/, '.$1'),
                         Description: item.description
                     });

@@ -322,9 +322,11 @@ func (mediaBox MediaBox) ConfigureQorMeta(metaor resource.Metaor) {
 }
 
 type File struct {
-	ID          json.Number
-	Url         string
-	Description string
+	ID           json.Number
+	Url          string
+	Video        string
+	SelectedType string
+	Description  string
 }
 
 func (file File) URL(styles ...string) string {
