@@ -327,6 +327,15 @@ type File struct {
 	Description string
 }
 
+func (file File) IsImage() bool {
+	_, err := getImageFormat(file.Url)
+	return err == nil
+}
+
+func (file File) IsVideo() bool {
+	return isVideoFormat(file.Url)
+}
+
 func (file File) URL(styles ...string) string {
 	if file.Url != "" && len(styles) > 0 {
 		ext := path.Ext(file.Url)
