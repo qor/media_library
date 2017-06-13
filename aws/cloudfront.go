@@ -27,9 +27,6 @@ func (s CloudFront) GetURLTemplate(option *media_library.Option) (path string) {
 	if path = option.Get("URL"); path == "" {
 		path = "/{{class}}/{{primary_key}}/{{column}}/{{filename_with_hash}}"
 	}
-	if awsS3PathPrefix != "" {
-		path = "/" + awsS3PathPrefix + path
-	}
 	if awsCloudFontDomain != "" {
 		return awsCloudFontDomain + path
 	}
@@ -58,6 +55,10 @@ func (s CloudFront) Store(url string, option *media_library.Option, reader io.Re
 		for _, scheme := range []string{"https://", "http://", "//"} {
 			filePath = strings.TrimPrefix(filePath, scheme+getEndpoint(option))
 		}
+	}
+
+	if awsCloudFontDomain != "" && awsS3PathPrefix != "" {
+		filePath = "/" + awsS3PathPrefix + filePath
 	}
 
 	fileType := mime.TypeByExtension(path.Ext(filePath))

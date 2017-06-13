@@ -102,9 +102,6 @@ func (s S3) GetURLTemplate(option *media_library.Option) (path string) {
 	if path = option.Get("URL"); path == "" {
 		path = "/{{class}}/{{primary_key}}/{{column}}/{{filename_with_hash}}"
 	}
-	if awsS3PathPrefix != "" {
-		path = "/" + awsS3PathPrefix + path
-	}
 	return "//" + getEndpoint(option) + path
 }
 
