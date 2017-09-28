@@ -5,6 +5,7 @@ import (
 	"image/gif"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -70,7 +71,7 @@ func TestURLWithFile(t *testing.T) {
 	}
 
 	filePath = user.Avatar.URL()
-	if _, err := os.Stat(path.Join("public", filePath)); err != nil {
+	if _, err := os.Stat(filepath.Join("public", filePath)); err != nil {
 		t.Errorf(`media_library.Base#URL() == %q, it's an invalid path`, filePath)
 	}
 
@@ -82,7 +83,7 @@ func TestURLWithFile(t *testing.T) {
 	}
 	for _, c := range styleCases {
 		filePath = user.Avatar.URL(c.styles...)
-		if _, err := os.Stat(path.Join("public", filePath)); err != nil {
+		if _, err := os.Stat(filepath.Join("public", filePath)); err != nil {
 			t.Errorf(`media_library.Base#URL(%q) == %q, it's an invalid path`, strings.Join(c.styles, ","), filePath)
 		}
 		if strings.Split(path.Base(filePath), ".")[2] != c.styles[0] {
@@ -96,7 +97,7 @@ func TestSaveIntoFileSystem(t *testing.T) {
 	if avatar, err := os.Open("test/logo.png"); err == nil {
 		user.Avatar.Scan(avatar)
 		if err := db.Save(&user).Error; err == nil {
-			if _, err := os.Stat(path.Join("public", user.Avatar.URL())); err != nil {
+			if _, err := os.Stat(filepath.Join("public", user.Avatar.URL())); err != nil {
 				t.Errorf("should find saved user avatar")
 			}
 
@@ -109,7 +110,7 @@ func TestSaveIntoFileSystem(t *testing.T) {
 				t.Errorf("url should be different after crop")
 			}
 
-			file, err := os.Open(path.Join("public", newUser.Avatar.URL("small1")))
+			file, err := os.Open(filepath.Join("public", newUser.Avatar.URL("small1")))
 			if err != nil {
 				t.Errorf("Failed open croped image")
 			}
@@ -140,7 +141,7 @@ func TestSaveGifIntoFileSystem(t *testing.T) {
 		avatar.Seek(0, 0)
 		user.Avatar.Scan(avatar)
 		if err := db.Save(&user).Error; err == nil {
-			if _, err := os.Stat(path.Join("public", user.Avatar.URL())); err != nil {
+			if _, err := os.Stat(filepath.Join("public", user.Avatar.URL())); err != nil {
 				t.Errorf("should find saved user avatar")
 			}
 
@@ -153,7 +154,7 @@ func TestSaveGifIntoFileSystem(t *testing.T) {
 				t.Errorf("url should be different after crop")
 			}
 
-			file, err := os.Open(path.Join("public", newUser.Avatar.URL("small1")))
+			file, err := os.Open(filepath.Join("public", newUser.Avatar.URL("small1")))
 			if err != nil {
 				t.Errorf("Failed open croped image")
 			}
