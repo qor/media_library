@@ -271,37 +271,40 @@ func (mediaBox MediaBox) ConfigureQorMeta(metaor resource.Metaor) {
 				})
 			}
 
-			config.RemoteDataResource.AddProcessor(func(record interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
-				if mediaLibrary, ok := record.(MediaLibraryInterface); ok {
-					var filename string
-					var mediaOption MediaOption
+			config.RemoteDataResource.AddProcessor(&resource.Processor{
+				Name: "media-meta-processor",
+				Handler: func(record interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
+					if mediaLibrary, ok := record.(MediaLibraryInterface); ok {
+						var filename string
+						var mediaOption MediaOption
 
-					for _, metaValue := range metaValues.Values {
-						if fileHeaders, ok := metaValue.Value.([]*multipart.FileHeader); ok {
-							for _, fileHeader := range fileHeaders {
-								filename = fileHeader.Filename
+						for _, metaValue := range metaValues.Values {
+							if fileHeaders, ok := metaValue.Value.([]*multipart.FileHeader); ok {
+								for _, fileHeader := range fileHeaders {
+									filename = fileHeader.Filename
+								}
+							}
+						}
+
+						if metaValue := metaValues.Get("MediaOption"); metaValue != nil {
+							mediaOptionStr := utils.ToString(metaValue.Value)
+							json.Unmarshal([]byte(mediaOptionStr), &mediaOption)
+						}
+
+						if mediaOption.SelectedType == "video_link" {
+							mediaLibrary.SetSelectedType("video_link")
+						} else if filename != "" {
+							if _, err := getImageFormat(filename); err == nil {
+								mediaLibrary.SetSelectedType("image")
+							} else if isVideoFormat(filename) {
+								mediaLibrary.SetSelectedType("video")
+							} else {
+								mediaLibrary.SetSelectedType("file")
 							}
 						}
 					}
-
-					if metaValue := metaValues.Get("MediaOption"); metaValue != nil {
-						mediaOptionStr := utils.ToString(metaValue.Value)
-						json.Unmarshal([]byte(mediaOptionStr), &mediaOption)
-					}
-
-					if mediaOption.SelectedType == "video_link" {
-						mediaLibrary.SetSelectedType("video_link")
-					} else if filename != "" {
-						if _, err := getImageFormat(filename); err == nil {
-							mediaLibrary.SetSelectedType("image")
-						} else if isVideoFormat(filename) {
-							mediaLibrary.SetSelectedType("video")
-						} else {
-							mediaLibrary.SetSelectedType("file")
-						}
-					}
-				}
-				return nil
+					return nil
+				},
 			})
 
 			config.RemoteDataResource.UseTheme("grid")
