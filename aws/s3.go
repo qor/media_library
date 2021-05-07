@@ -32,6 +32,7 @@ var awsAccessKeyID = os.Getenv("QOR_AWS_ACCESS_KEY_ID")
 
 // required
 var awsSecretAccessKey = os.Getenv("QOR_AWS_SECRET_ACCESS_KEY")
+var cloud_front_domain = os.Getenv("QOR_AWS_CLOUD_FRONT_DOMAIN")
 
 // required
 // S3Bucket
@@ -101,8 +102,12 @@ func (s S3) Store(url string, option *media_library.Option, reader io.Reader) er
 	//
 	// For example `https://www.google.com/images/file.png` to `/images/file.png`.
 	filePath := url
-	for _, scheme := range []string{"https://", "http://", "//"} {
-		filePath = strings.TrimPrefix(filePath, scheme+getEndpoint(option))
+	if cloud_front_domain != "" {
+		filePath = strings.TrimPrefix(url, cloud_front_domain)
+	} else {
+		for _, scheme := range []string{"https://", "http://", "//"} {
+			filePath = strings.TrimPrefix(filePath, scheme+getEndpoint(option))
+		}
 	}
 
 	fileType := mime.TypeByExtension(path.Ext(filePath))
