@@ -12,7 +12,8 @@ import (
 
 func cropField(field *gorm.Field, scope *gorm.Scope) (cropped bool) {
 	if field.Field.CanAddr() {
-		if media, ok := field.Field.Addr().Interface().(MediaLibrary); ok && !media.Cropped() {
+		// TODO Handle scanner
+		if media, ok := field.Field.Addr().Interface().(Media); ok && !media.Cropped() {
 			option := parseTagOption(field.Tag.Get("media_library"))
 			if media.GetFileHeader() != nil || media.NeedCrop() {
 				var file multipart.File
@@ -40,7 +41,7 @@ func cropField(field *gorm.Field, scope *gorm.Scope) (cropped bool) {
 				if file != nil {
 					defer file.Close()
 					var handled = false
-					for _, handler := range mediaLibraryHandlers {
+					for _, handler := range mediaHandlers {
 						if handler.CouldHandle(media) {
 							file.Seek(0, 0)
 							if scope.Err(handler.Handle(media, file, option)) == nil {
@@ -66,6 +67,7 @@ func saveAndCropImage(isCreate bool) func(scope *gorm.Scope) {
 		if !scope.HasError() {
 			var updateColumns = map[string]interface{}{}
 
+			// Handle SerializableMeta
 			if value, ok := scope.Value.(serializable_meta.SerializableMetaInterface); ok {
 				var (
 					isCropped        bool
@@ -99,6 +101,7 @@ func saveAndCropImage(isCreate bool) func(scope *gorm.Scope) {
 				}
 			}
 
+			// Handle Normal Field
 			for _, field := range scope.Fields() {
 				if cropField(field, scope) && isCreate {
 					updateColumns[field.DBName] = field.Field.Interface()
@@ -106,7 +109,7 @@ func saveAndCropImage(isCreate bool) func(scope *gorm.Scope) {
 			}
 
 			if !scope.HasError() && len(updateColumns) != 0 {
-				scope.NewDB().Model(scope.Value).UpdateColumns(updateColumns)
+				scope.Err(scope.NewDB().Model(scope.Value).UpdateColumns(updateColumns).Error)
 			}
 		}
 	}
