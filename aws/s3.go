@@ -9,12 +9,9 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/qor/media_library"
@@ -43,39 +40,18 @@ var cloud_front_domain = os.Getenv("QOR_AWS_CLOUD_FRONT_DOMAIN")
 // option
 var awsSessionToken = os.Getenv("QOR_AWS_SESSION_TOKEN")
 
-var awsS3PathPrefix = os.Getenv("QOR_AWS_S3_PATH_PREFIX")
-
 func s3client() *s3.S3 {
 	if client == nil {
-		var creds *credentials.Credentials
-		if awsAccessKeyID == "" && awsSecretAccessKey == "" {
-			client = s3.New(session.New(), EC2RoleAwsConfig())
-		} else {
-			creds = credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, awsSessionToken)
-			if _, err := creds.Get(); err == nil {
-				client = s3.New(session.New(), &aws.Config{
-					Region:      &awsRegion,
-					Credentials: creds,
-				})
-			}
+		creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, awsSessionToken)
+
+		if _, err := creds.Get(); err == nil {
+			client = s3.New(session.New(), &aws.Config{
+				Region:      &awsRegion,
+				Credentials: creds,
+			})
 		}
 	}
 	return client
-}
-
-func EC2RoleAwsConfig() *aws.Config {
-	ec2m := ec2metadata.New(session.New(), &aws.Config{
-		HTTPClient: &http.Client{Timeout: 10 * time.Second},
-		Endpoint:   aws.String("http://169.254.169.254/latest"),
-	})
-	cr := credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{
-		Client: ec2m,
-	})
-
-	return &aws.Config{
-		Region:      &awsRegion,
-		Credentials: cr,
-	}
 }
 
 func getBucket(option *media_library.Option) string {
@@ -103,9 +79,7 @@ func (s S3) GetURLTemplate(option *media_library.Option) (path string) {
 	if path = option.Get("URL"); path == "" {
 		path = "/{{class}}/{{primary_key}}/{{column}}/{{filename_with_hash}}"
 	}
-	if awsS3PathPrefix != "" {
-		path = "/" + awsS3PathPrefix + path
-	}
+
 	return "//" + getEndpoint(option) + path
 }
 

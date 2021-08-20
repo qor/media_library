@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/disintegration/imaging"
-	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	"github.com/jinzhu/inflection"
 	"github.com/qor/admin"
@@ -62,7 +61,7 @@ func (b *Base) Scan(data interface{}) (err error) {
 	switch values := data.(type) {
 	case *os.File:
 		b.FileHeader = &fileWrapper{values}
-		b.FileName = filepath.Base(values.Name())
+		b.FileName = path.Base(values.Name())
 	case *multipart.FileHeader:
 		b.FileHeader, b.FileName = values, values.Filename
 	case []*multipart.FileHeader:
@@ -71,21 +70,17 @@ func (b *Base) Scan(data interface{}) (err error) {
 			b.FileHeader, b.FileName = file, file.Filename
 		}
 	case []byte:
-		if string(values) != "" {
-			if err = json.Unmarshal(values, b); err == nil {
-				var doCrop struct{ Crop bool }
-				if err = json.Unmarshal(values, &doCrop); err == nil && doCrop.Crop {
-					b.Crop = true
-				}
+		if err = json.Unmarshal(values, b); err == nil {
+			var doCrop struct{ Crop bool }
+			if err = json.Unmarshal(values, &doCrop); err == nil && doCrop.Crop {
+				b.Crop = true
 			}
 		}
 	case string:
-		return b.Scan([]byte(values))
+		b.Scan([]byte(values))
 	case []string:
 		for _, str := range values {
-			if err := b.Scan(str); err != nil {
-				return err
-			}
+			b.Scan(str)
 		}
 	default:
 		err = errors.New("unsupported driver -> Scan pair for MediaLibrary")
@@ -158,7 +153,7 @@ func getFuncMap(scope *gorm.Scope, field *gorm.Field, filename string) template.
 		"basename":    func() string { return strings.TrimSuffix(path.Base(filename), path.Ext(filename)) },
 		"hash":        hash,
 		"filename_with_hash": func() string {
-			return urlReplacer.ReplaceAllString(fmt.Sprintf("%s.%v%v", slug.Make(strings.TrimSuffix(path.Base(filename), path.Ext(filename))), hash(), path.Ext(filename)), "-")
+			return urlReplacer.ReplaceAllString(fmt.Sprintf("%v.%v%v", strings.TrimSuffix(filename, path.Ext(filename)), hash(), path.Ext(filename)), "-")
 		},
 		"extension": func() string { return strings.TrimPrefix(path.Ext(filename), ".") },
 	}
@@ -209,18 +204,14 @@ func (b Base) Retrieve(url string) (*os.File, error) {
 }
 
 // GetSizes get configured sizes, it will be used to crop images accordingly
-func (b Base) GetSizes() map[string]*Size {
-	return map[string]*Size{}
+func (b Base) GetSizes() map[string]Size {
+	return map[string]Size{}
 }
 
 // IsImage return if it is an image
 func (b Base) IsImage() bool {
 	_, err := getImageFormat(b.URL())
 	return err == nil
-}
-
-func (b Base) IsVideo() bool {
-	return isVideoFormat(b.URL())
 }
 
 func init() {
@@ -251,23 +242,9 @@ func getImageFormat(url string) (*imaging.Format, error) {
 		".gif":  imaging.GIF,
 	}
 
-	ext := strings.ToLower(regexp.MustCompile(`(\?.*?$)`).ReplaceAllString(filepath.Ext(url), ""))
+	ext := strings.ToLower(filepath.Ext(url))
 	if f, ok := formats[ext]; ok {
 		return &f, nil
 	}
 	return nil, imaging.ErrUnsupportedFormat
-}
-
-func isVideoFormat(name string) bool {
-	formats := []string{".mp4", ".m4p", ".m4v", ".m4v", ".mov", ".mpeg", ".webm", ".avi", ".ogg", ".ogv"}
-
-	ext := strings.ToLower(regexp.MustCompile(`(\?.*?$)`).ReplaceAllString(filepath.Ext(name), ""))
-
-	for _, format := range formats {
-		if format == ext {
-			return true
-		}
-	}
-
-	return false
 }

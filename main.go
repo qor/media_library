@@ -24,7 +24,7 @@ type URLTemplater interface {
 }
 
 // MediaLibrary is an interface including methods that needs for a media library storage
-type Media interface {
+type MediaLibrary interface {
 	Scan(value interface{}) error
 	Value() (driver.Value, error)
 
@@ -34,7 +34,7 @@ type Media interface {
 	GetFileHeader() FileHeader
 	GetFileName() string
 
-	GetSizes() map[string]*Size
+	GetSizes() map[string]Size
 	NeedCrop() bool
 	Cropped(values ...bool) bool
 	GetCropOption(name string) *image.Rectangle
