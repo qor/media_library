@@ -42,15 +42,22 @@ var awsSessionToken = os.Getenv("QOR_AWS_SESSION_TOKEN")
 
 func s3client() *s3.S3 {
 	if client == nil {
-		creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, awsSessionToken)
-
-		if _, err := creds.Get(); err == nil {
-			client = s3.New(session.New(), &aws.Config{
-				Region:      &awsRegion,
-				Credentials: creds,
-			})
+		s3Config := &aws.Config{
+			Region: &awsRegion,
+		}
+		if awsAccessKeyID == "" && awsSecretAccessKey == "" {
+			// use aws default Credentials
+			sess := session.Must(session.NewSession())
+			client = s3.New(sess, s3Config)
+		} else {
+			creds := credentials.NewStaticCredentials(awsAccessKeyID, awsSecretAccessKey, awsSessionToken)
+			if _, err := creds.Get(); err == nil {
+				s3Config.Credentials = creds
+				client = s3.New(session.New(), s3Config)
+			}
 		}
 	}
+
 	return client
 }
 
